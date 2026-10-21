@@ -10,6 +10,9 @@ Dentro da pasta `banking-project`:
 py -m banking
 ```
 
+Você também pode abrir `main.py` no VS Code e selecionar **Run Python File in
+Terminal** (Executar Arquivo Python no Terminal), ou executar `py main.py`.
+
 Em ambientes que usam o comando `python`, execute `python -m banking`.
 Não é necessário instalar dependências para executar ou testar.
 

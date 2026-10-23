@@ -1,15 +1,19 @@
 import unittest
 from decimal import Decimal
+from contextlib import redirect_stdout
+from io import StringIO
+from unittest.mock import patch
 
 from banking import Banco
 from banking.exceptions import ErroBancario, SaldoInsuficiente
+from banking.cli import main
 
 
 class BancoTests(unittest.TestCase):
     def setUp(self):
         self.banco = Banco()
         cliente = self.banco.cadastrar_cliente("Ana", "123.456.789-00")
-        self.origem = self.banco.abrir_conta(cliente.id)
+        self.origem = self.banco.listar_contas()[0]
         self.destino = self.banco.abrir_conta(cliente.id)
 
     def test_deposito_saque_e_extrato(self):
@@ -41,6 +45,48 @@ class BancoTests(unittest.TestCase):
     def test_cpf_duplicado(self):
         with self.assertRaises(ErroBancario):
             self.banco.cadastrar_cliente("Outra Ana", "12345678900")
+
+    def test_cadastro_abre_conta_e_normaliza_cpf(self):
+        self.assertEqual(self.origem.cliente.cpf, "12345678900")
+        self.assertEqual(self.origem.numero, "000001")
+        self.assertEqual(self.origem.saldo, Decimal("0.00"))
+        self.assertEqual(self.origem.transacoes, [])
+
+    def test_numeracao_incremental_entre_clientes_e_contas_adicionais(self):
+        cliente = self.banco.cadastrar_cliente("Bruno", "98765432100")
+        adicional = self.banco.abrir_conta(cliente.id)
+        self.assertEqual(cliente.id, 2)
+        self.assertEqual(adicional.numero, "000004")
+        self.assertEqual([c.numero for c in self.banco.listar_contas()],
+                         ["000001", "000002", "000003", "000004"])
+
+    def test_cadastro_invalido_nao_cria_cliente_ou_conta(self):
+        for nome, cpf in (("", "98765432100"), ("Ana", ""),
+                          ("Ana", "123"), ("Ana", "abcdefghijk"),
+                          ("Ana", "12345678900")):
+            with self.subTest(nome=nome, cpf=cpf), self.assertRaises(ErroBancario):
+                self.banco.cadastrar_cliente(nome, cpf)
+        cliente = self.banco.cadastrar_cliente("Bruno", "98765432100")
+        self.assertEqual(cliente.id, 2)
+        self.assertEqual(self.banco.listar_contas()[-1].numero, "000003")
+
+    def test_cliente_inexistente_nao_consume_numero_da_conta(self):
+        with self.assertRaises(ErroBancario):
+            self.banco.abrir_conta(999)
+        self.assertEqual(self.banco.abrir_conta(self.origem.cliente.id).numero, "000003")
+
+    def test_cli_cadastro_seguido_de_listagem(self):
+        saida = StringIO()
+        with patch("builtins.input", side_effect=["1", "Ana", "123.456.789-00", "3", "0"]), redirect_stdout(saida):
+            main()
+        self.assertIn("Conta aberta automaticamente: 000001", saida.getvalue())
+        self.assertIn("000001 | Ana | CPF: 12345678900 | R$ 0.00", saida.getvalue())
+
+    def test_cli_listagem_vazia(self):
+        saida = StringIO()
+        with patch("builtins.input", side_effect=["3", "0"]), redirect_stdout(saida):
+            main()
+        self.assertIn("Nenhuma conta cadastrada.", saida.getvalue())
 
     def test_destino_inexistente_nao_debita(self):
         self.banco.depositar(self.origem.numero, "10")

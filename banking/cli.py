@@ -12,7 +12,7 @@ def main() -> None:
     banco = Banco()
     print(f"Bem-vindo ao {banco.nome}!")
     while True:
-        print("\n1 - Cadastrar cliente\n2 - Abrir conta\n3 - Listar contas"
+        print("\n1 - Cadastrar cliente e abrir conta\n2 - Abrir conta adicional\n3 - Listar contas"
               "\n4 - Depositar\n5 - Sacar\n6 - Transferir\n7 - Extrato\n0 - Sair")
         try:
             opcao = input("Opção: ").strip()
@@ -20,7 +20,9 @@ def main() -> None:
                 break
             if opcao == "1":
                 cliente = banco.cadastrar_cliente(input("Nome: "), input("CPF: "))
+                conta = next(c for c in banco.listar_contas() if c.cliente.id == cliente.id)
                 print(f"Cliente cadastrado. ID: {cliente.id}")
+                print(f"Conta aberta automaticamente: {conta.numero}")
             elif opcao == "2":
                 conta = banco.abrir_conta(int(input("ID do cliente: ")))
                 print(f"Conta aberta: {conta.numero}")
@@ -29,7 +31,7 @@ def main() -> None:
                 if not contas:
                     print("Nenhuma conta cadastrada.")
                 for conta in contas:
-                    print(f"{conta.numero} | {conta.cliente.nome} | R$ {conta.saldo:.2f}")
+                    print(f"{conta.numero} | {conta.cliente.nome} | CPF: {conta.cliente.cpf} | R$ {conta.saldo:.2f}")
             elif opcao in ("4", "5"):
                 numero = input("Conta: ").strip()
                 operacao = banco.depositar if opcao == "4" else banco.sacar

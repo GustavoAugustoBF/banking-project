@@ -35,8 +35,10 @@ banking-project/
 
 ## Funcionalidades
 
-- Cadastrar clientes com CPF único e abrir contas com saldo inicial zero.
-- Consultar contas e saldos.
+- Cadastrar clientes com CPF obrigatório e único, abrindo automaticamente a primeira conta com saldo zero.
+- Gerar IDs de clientes e números de contas automaticamente, em sequência (contas: `000001`, `000002`, ...).
+- Abrir contas adicionais para um cliente existente usando o ID informado no cadastro.
+- Listar contas com número, nome do titular, CPF e saldo, inclusive logo após o cadastro.
 - Depositar, sacar e transferir entre contas.
 - Consultar o histórico de transações.
 - Validar valores positivos, centavos e saldo disponível.
@@ -54,6 +56,7 @@ py -m unittest discover -s tests -v
 ## Limites desta versão
 
 Projeto didático: os dados ficam em memória e são perdidos ao encerrar o programa.
+A numeração é sequencial durante a execução e reinicia ao abrir o programa novamente.
 O CPF é validado pelo formato de 11 dígitos, sem cálculo dos dígitos verificadores.
 Os modelos são mutáveis; use o serviço `Banco` para executar operações.
 Não há autenticação, persistência ou suporte a operações concorrentes.

@@ -26,6 +26,8 @@ class Banco:
         self.nome = nome
         self._clientes: dict[int, Cliente] = {}
         self._contas: dict[str, Conta] = {}
+        self._proximo_cliente_id = 1
+        self._proximo_numero_conta = 1
 
     def cadastrar_cliente(self, nome: str, cpf: str) -> Cliente:
         nome = nome.strip()
@@ -36,17 +38,20 @@ class Banco:
             raise ErroBancario("O CPF deve conter 11 dígitos.")
         if any(cliente.cpf == cpf for cliente in self._clientes.values()):
             raise ErroBancario("CPF já cadastrado.")
-        cliente = Cliente(len(self._clientes) + 1, nome, cpf)
+        cliente = Cliente(self._proximo_cliente_id, nome, cpf)
         self._clientes[cliente.id] = cliente
+        self._proximo_cliente_id += 1
+        self.abrir_conta(cliente.id)
         return cliente
 
     def abrir_conta(self, cliente_id: int) -> Conta:
         cliente = self._clientes.get(cliente_id)
         if cliente is None:
             raise ErroBancario("Cliente não encontrado.")
-        numero = f"{len(self._contas) + 1:06d}"
+        numero = f"{self._proximo_numero_conta:06d}"
         conta = Conta(numero, cliente)
         self._contas[numero] = conta
+        self._proximo_numero_conta += 1
         return conta
 
     def buscar_conta(self, numero: str) -> Conta:

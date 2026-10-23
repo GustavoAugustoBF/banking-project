@@ -44,6 +44,13 @@ class Banco:
         self.abrir_conta(cliente.id)
         return cliente
 
+    def buscar_clientes_por_nome(self, nome: str) -> tuple[Cliente, ...]:
+        termo = " ".join(nome.split()).casefold()
+        if not termo:
+            raise ErroBancario("Informe o nome do cliente para consultar.")
+        return tuple(cliente for cliente in self._clientes.values()
+                     if termo in " ".join(cliente.nome.split()).casefold())
+
     def abrir_conta(self, cliente_id: int) -> Conta:
         cliente = self._clientes.get(cliente_id)
         if cliente is None:

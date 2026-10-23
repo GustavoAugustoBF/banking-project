@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 from banking import Banco
 from banking.exceptions import ErroBancario, SaldoInsuficiente
-from banking.cli import main
+from banking.cli import abrir_conta_adicional, main
 
 
 class BancoTests(unittest.TestCase):
@@ -87,6 +87,45 @@ class BancoTests(unittest.TestCase):
         with patch("builtins.input", side_effect=["3", "0"]), redirect_stdout(saida):
             main()
         self.assertIn("Nenhuma conta cadastrada.", saida.getvalue())
+
+    def test_busca_por_nome_parcial_sem_diferenciar_maiusculas(self):
+        cliente = self.banco.cadastrar_cliente("Ana Silva", "98765432100")
+        encontrados = self.banco.buscar_clientes_por_nome("  ANA  ")
+        self.assertEqual([c.id for c in encontrados], [1, cliente.id])
+        self.assertEqual(self.banco.buscar_clientes_por_nome("ana   silva"), (cliente,))
+        self.assertEqual(self.banco.buscar_clientes_por_nome("Inexistente"), ())
+        with self.assertRaises(ErroBancario):
+            self.banco.buscar_clientes_por_nome("   ")
+
+    def test_conta_adicional_seleciona_homonimo_e_confirma(self):
+        cliente = self.banco.cadastrar_cliente("Ana", "98765432100")
+        saida = StringIO()
+        with patch("builtins.input", side_effect=["ana", "2", "sim"]), redirect_stdout(saida):
+            abrir_conta_adicional(self.banco)
+        conta = self.banco.listar_contas()[-1]
+        self.assertEqual(conta.numero, "000004")
+        self.assertEqual(conta.cliente, cliente)
+        self.assertIn("1 - Ana | CPF: 12345678900 | Contas: 000001, 000002", saida.getvalue())
+        self.assertIn("2 - Ana | CPF: 98765432100 | Contas: 000003", saida.getvalue())
+        self.assertIn("Conta adicional aberta: 000004", saida.getvalue())
+
+    def test_conta_adicional_cancelada_ou_invalida_nao_cria_conta(self):
+        for entradas in (["Ana", "0"], ["Ana", "1", "n"],
+                         ["Ana", "1", ""], ["Ana", "abc"],
+                         ["Ana", "-1"], ["Ana", "2"], ["Inexistente"]):
+            with self.subTest(entradas=entradas):
+                with patch("builtins.input", side_effect=entradas), redirect_stdout(StringIO()):
+                    abrir_conta_adicional(self.banco)
+                self.assertEqual(len(self.banco.listar_contas()), 2)
+
+    def test_cli_abertura_adicional_por_nome(self):
+        saida = StringIO()
+        entradas = ["1", "Ana", "12345678900", "2", "Ana", "1", "s", "3", "0"]
+        with patch("builtins.input", side_effect=entradas), redirect_stdout(saida):
+            main()
+        self.assertIn("Conta aberta automaticamente: 000001", saida.getvalue())
+        self.assertIn("Conta adicional aberta: 000002", saida.getvalue())
+        self.assertIn("000002 | Ana | CPF: 12345678900 | R$ 0.00", saida.getvalue())
 
     def test_destino_inexistente_nao_debita(self):
         self.banco.depositar(self.origem.numero, "10")

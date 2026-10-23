@@ -8,6 +8,39 @@ def ler_valor() -> str:
     return input("Valor (ex.: 100,50): ").strip().replace(",", ".")
 
 
+def abrir_conta_adicional(banco: Banco) -> None:
+    clientes = banco.buscar_clientes_por_nome(input("Nome do cliente (ou parte dele): "))
+    if not clientes:
+        print("Nenhum cliente encontrado com esse nome.")
+        return
+    print("Clientes encontrados:")
+    for indice, cliente in enumerate(clientes, start=1):
+        numeros = ", ".join(conta.numero for conta in banco.listar_contas()
+                            if conta.cliente.id == cliente.id)
+        print(f"{indice} - {cliente.nome} | CPF: {cliente.cpf} | Contas: {numeros}")
+    escolha = input("Selecione o cliente pelo número da lista (0 para cancelar): ").strip()
+    if escolha == "0":
+        print("Abertura cancelada.")
+        return
+    try:
+        indice = int(escolha)
+    except ValueError:
+        print("Seleção inválida. Nenhuma conta foi aberta.")
+        return
+    if not 1 <= indice <= len(clientes):
+        print("Seleção inválida. Nenhuma conta foi aberta.")
+        return
+    cliente = clientes[indice - 1]
+    confirmacao = input(
+        f"Abrir conta adicional para {cliente.nome}, CPF {cliente.cpf}? (s/n): "
+    ).strip().casefold()
+    if confirmacao not in ("s", "sim"):
+        print("Abertura cancelada.")
+        return
+    conta = banco.abrir_conta(cliente.id)
+    print(f"Conta adicional aberta: {conta.numero} | Titular: {cliente.nome}")
+
+
 def main() -> None:
     banco = Banco()
     print(f"Bem-vindo ao {banco.nome}!")
@@ -21,11 +54,10 @@ def main() -> None:
             if opcao == "1":
                 cliente = banco.cadastrar_cliente(input("Nome: "), input("CPF: "))
                 conta = next(c for c in banco.listar_contas() if c.cliente.id == cliente.id)
-                print(f"Cliente cadastrado. ID: {cliente.id}")
+                print(f"Cliente cadastrado: {cliente.nome} | CPF: {cliente.cpf}")
                 print(f"Conta aberta automaticamente: {conta.numero}")
             elif opcao == "2":
-                conta = banco.abrir_conta(int(input("ID do cliente: ")))
-                print(f"Conta aberta: {conta.numero}")
+                abrir_conta_adicional(banco)
             elif opcao == "3":
                 contas = banco.listar_contas()
                 if not contas:
@@ -52,8 +84,6 @@ def main() -> None:
                 print("Opção inválida.")
         except ErroBancario as exc:
             print(f"Erro: {exc}")
-        except ValueError:
-            print("Informe um ID numérico válido.")
         except (EOFError, KeyboardInterrupt):
             print("\nEncerrando o simulador.")
             break

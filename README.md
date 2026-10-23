@@ -37,7 +37,8 @@ banking-project/
 
 - Cadastrar clientes com CPF obrigatório e único, abrindo automaticamente a primeira conta com saldo zero.
 - Gerar IDs de clientes e números de contas automaticamente, em sequência (contas: `000001`, `000002`, ...).
-- Abrir contas adicionais para um cliente existente usando o ID informado no cadastro.
+- Exibir o número da primeira conta logo após cadastrar o cliente.
+- Abrir contas adicionais buscando o nome completo ou parte dele, selecionando o titular na lista com CPF e contas existentes e confirmando a abertura. Não é necessário saber o ID interno do cliente.
 - Listar contas com número, nome do titular, CPF e saldo, inclusive logo após o cadastro.
 - Depositar, sacar e transferir entre contas.
 - Consultar o histórico de transações.
